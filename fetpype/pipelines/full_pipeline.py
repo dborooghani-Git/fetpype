@@ -231,26 +231,21 @@ def get_recon(cfg):
 
     Args:
         cfg: Configuration object containing the parameters for the pipeline.
-        enabled_clamp:   Boolean indicating whether clamping is enabled.
-                            This is set to False for now !!!!! , enabled_clamp=False
 
     Returns:
         rec_pipe:   A Nipype workflow object that contains
                     the reconstruction steps.
     """
-    
-    # cfg here is the full and completed configuration file 
-    
+    # The cfg here is the full and completed configuration file
+
     container = cfg.container
     cfg_reco_base = cfg.reconstruction
     cfg_reco = cfg.reconstruction.reconstruction[container]
     cfg_postpro = cfg.reconstruction.postprocessing
-    
     rec_pipe = pe.Workflow(name="Reconstruction")
-    
     enabled_clamp = cfg_postpro.clamp_intensity.enabled
     enabled_ppbc = cfg_postpro.bias_correction.enabled
-    
+
     # Creating input node
     # Define input and output
     inputnode = pe.Node(
@@ -260,10 +255,7 @@ def get_recon(cfg):
         niu.IdentityInterface(fields=["output_stacks"]), name="outputnode"
     )
 
-    
-    
     # 1. reconstruction
-
     recon = pe.Node(
         interface=niu.Function(
             input_names=[
@@ -287,11 +279,9 @@ def get_recon(cfg):
         recon.inputs.singularity_path = cfg.singularity_path
         recon.inputs.singularity_mount = cfg.singularity_mount
 
-
     # 2. clamp_intensities
     clamp_intense_name = "clamp_intensities"
     clamp_intense_name += "_disabled" if not enabled_clamp else ""
-    
     clamp_intense = pe.Node(
         interface=niu.Function(
             input_names=[
@@ -300,15 +290,13 @@ def get_recon(cfg):
                 "is_enabled",
             ],
             output_names=["output_stacks"],
-            #function=clamp_intensities(cfg, input_stacks,is_enabled=enabled_clamp,), 
-            function=clamp_intensities, 
+            function=clamp_intensities,
         ),
-        #iterfield=["input_stacks"],
         name=clamp_intense_name
     )
     clamp_intense.inputs.is_enabled = enabled_clamp
     clamp_intense.inputs.cfg = cfg
-    
+
     # 3. post_bias_correction
     post_bias_corr_name = "PostBiasCorrection"
     post_bias_corr_name += "_disabled" if not enabled_ppbc else ""
@@ -324,7 +312,6 @@ def get_recon(cfg):
                 "singularity_mount",
             ],
             output_names=["output_stacks"],
-            #function=run_prepro_cmd,
             function=run_postpro_cmd,
         ),
         iterfield=["input_stacks", "input_masks"],
@@ -334,39 +321,27 @@ def get_recon(cfg):
     post_bias_corr.inputs.is_enabled = enabled_ppbc
     post_bias_corr.inputs.cmd = post_bias_cfg[container].cmd
 
-    # if the container is singularity, add singularity path to the post_bias_corr
+    # if the container is singularity, add singularity path to post_bias_corr
     if cfg.container == "singularity":
         post_bias_corr.inputs.singularity_path = cfg.singularity_path
         post_bias_corr.inputs.singularity_mount = cfg.singularity_mount
 
-
-
     # connect nodes
-    
     rec_pipe.connect(
         [
             (inputnode, recon, [("stacks", "input_stacks")]),
             (inputnode, recon, [("masks", "input_masks")]),
         ]
     )
-    
-#    rec_pipe.connect(inputnode, "masks", post_bias_corr, "input_masks")
 
-    
-    ## recon => clamp_intense => post_bias_corr => outputnode
+    # recon => clamp_intense => post_bias_corr => outputnode
     rec_pipe.connect(recon, "srr_volume", clamp_intense, "input_stacks")
-    #rec_pipe.connect(recon, "srr_volume", post_bias_corr, "input_masks")
-    rec_pipe.connect(clamp_intense, "output_stacks", post_bias_corr, "input_stacks")
-    rec_pipe.connect(post_bias_corr, "output_stacks", outputnode, "output_stacks")
-    
-    
-    ## recon => post_bias_corr => clamp_intense => outputnode
-    #rec_pipe.connect(recon, "srr_volume", post_bias_corr, "input_stacks")
-    #rec_pipe.connect(post_bias_corr, "output_stacks", clamp_intense, "input_stacks")
-    #rec_pipe.connect(clamp_intense, "output_stacks", outputnode, "output_stacks")
-    
-    
-    
+    rec_pipe.connect(
+        clamp_intense, "output_stacks", post_bias_corr, "input_stacks"
+    )
+    rec_pipe.connect(
+        post_bias_corr, "output_stacks", outputnode, "output_stacks"
+    )
     return rec_pipe
 
 
@@ -573,13 +548,11 @@ def create_full_pipeline(cfg, load_masks=False, name="full_pipeline"):
     )
 
     full_fet_pipe.connect(
-        #recon, "outputnode.srr_volume", outputnode, "output_srr"
         recon, "outputnode.output_stacks", outputnode, "output_srr"
     )
 
     # SEGMENTATION
     full_fet_pipe.connect(
-        #recon, "outputnode.srr_volume", segmentation, "inputnode.srr_volume"
         recon, "outputnode.output_stacks", segmentation, "inputnode.srr_volume"
     )
 

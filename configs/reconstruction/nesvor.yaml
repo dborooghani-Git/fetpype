@@ -6,6 +6,7 @@ reconstruction:
       --input-stacks <input_stacks> 
       --stack-masks <input_masks> 
       --output-volume <output_volume> 
+      --output-resolution <output_res>
       --batch-size 4096 
       --n-levels-bias 1"
   singularity:
@@ -14,6 +15,7 @@ reconstruction:
       --input-stacks <input_stacks> 
       --stack-masks <input_masks> 
       --output-volume <output_volume> 
+      --output-resolution <output_res>
       --batch-size 4096 
       --n-levels-bias 1"
   args:

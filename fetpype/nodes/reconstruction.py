@@ -95,11 +95,8 @@ def run_recon_cmd(
 
     run_and_tee(cmd)
     return output_volume
-    
-    
-    
-    
-    
+
+
 def run_postpro_cmd(
     input_stacks,
     cmd,
@@ -130,11 +127,10 @@ def run_postpro_cmd(
     # Important for mapnodes
     unlist_stacks = False
     unlist_masks = False
-    
+
     # Making input_masks optional
     if input_masks:
         print("masks different than 0", input_masks)
-        #in_masks = " ".join(input_masks)
         cmd = cmd.replace("<input_masks>", input_masks)
     else:
         print("masks 0", input_masks)
@@ -237,15 +233,17 @@ def run_postpro_cmd(
         return output_stacks
     elif output_masks is not None:
         return output_masks
-        
-        
-        
-        
-        
-def clamp_intensities(cfg, input_stacks, is_enabled=True):
+
+
+def clamp_intensities(
+    cfg,
+    input_stacks,
+    is_enabled=True
+):
 
     """
-    Run an intensity clamping command on input stacks based on a specified quantile in the configuration file.
+    Run an intensity clamping command on input stacks based on a specified
+    quantile in the configuration file.
 
     Args:
         cfg (object): Configuration object containing output directory
@@ -253,43 +251,38 @@ def clamp_intensities(cfg, input_stacks, is_enabled=True):
         input_stacks (str or list): Input stacks to process.
         is_enabled (bool): Whether the command should be executed.
     Returns:
-        output_stacks: Stacks that their intensity is clamped 
+        output_stacks: Stacks that their intensity is clamped.
 
     """
-
-
     import os
     import numpy as np
     import nibabel as nib
-    
-    
+
     if is_enabled:
-    
-        
         nifti_img = nib.load(input_stacks)
-        data = nifti_img.get_fdata() # data is already a NumPy array
-        #data = input_stacks
+        data = nifti_img.get_fdata()
         q_ratio = cfg.reconstruction.quantile_ratio
         flat_data = data.flatten()
         q = np.quantile(flat_data, q_ratio, axis=None)
-        
-        mask_pos = data >= q # makes a boolian array or mask
+        mask_pos = data >= q
         all_masks = mask_pos
-        outliers = np.where(all_masks) # Is a tuple of NumPy arrays.
         outliers_mask = np.zeros(data.shape, dtype=bool)
         outliers_mask[all_masks] = True
-        replace_value_pos = np.max(data[(~outliers_mask)  & (~np.isnan(data))])
+        replace_value_pos = np.max(data[(~outliers_mask) & (~np.isnan(data))])
         filtered_data_array = data.copy()
-
         filtered_data_array[mask_pos] = replace_value_pos
-        
-        
-        output_stacks = os.path.join(os.getcwd(), os.path.basename(input_stacks).replace(".nii.gz", "_clamped.nii.gz"))
-        image_clamped = nib.Nifti1Image(filtered_data_array, nifti_img.affine, nifti_img.header)
+        output_stacks = os.path.join(
+            os.getcwd(),
+            os.path.basename(input_stacks).replace(
+                ".nii.gz", "_clamped.nii.gz"
+            )
+        )
+        image_clamped = nib.Nifti1Image(
+            filtered_data_array,
+            nifti_img.affine,
+            nifti_img.header
+        )
         nib.save(image_clamped, output_stacks)
-
-        
-        
         return output_stacks
 
     else:
