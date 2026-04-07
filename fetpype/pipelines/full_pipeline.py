@@ -623,7 +623,9 @@ def create_rec_pipeline(cfg, load_masks=False, name="rec_pipeline"):
         niu.IdentityInterface(fields=["output_srr", "output_seg"]),
         name="outputnode",
     )
-    rec_pipe.connect(recon, "outputnode.output_stacks", outputnode, "output_srr")
+    rec_pipe.connect(
+        recon, "outputnode.output_stacks", outputnode, "output_srr"
+    )
 
     return rec_pipe
 
