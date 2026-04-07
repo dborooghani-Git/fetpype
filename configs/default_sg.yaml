@@ -1,6 +1,6 @@
 defaults:
   - preprocessing/default
-  - reconstruction/svrtk
+  - reconstruction/nesvor
   - segmentation/bounti
   - surface/surfpype
   - _self_
